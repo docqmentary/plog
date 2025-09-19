@@ -1,0 +1,57 @@
+### Keyword extraction
+POST http://localhost:8000/keywords/extract
+Content-Type: application/json
+
+{
+  "draft": "환절기 아토피 환자 교육 글을 쓰려 합니다. 보습 루틴과 실내 습도 관리, 목욕 빈도에 대해 다루고 싶습니다."
+}
+
+### Volume lookup
+POST http://localhost:8000/keywords/volume
+Content-Type: application/json
+
+{ "keywords": ["환절기 아토피","아토피 보습","실내 습도 아토피"] }
+
+### Refresh curve & predict
+GET http://localhost:8000/curve?refresh=true
+
+### External references (search OFF; provide your collected top 10 URLs)
+POST http://localhost:8000/references/external
+Content-Type: application/json
+
+{
+  "keyword": "환절기 아토피",
+  "urls": [
+    "https://blog.naver.com/xxxx1",
+    "https://blog.naver.com/xxxx2",
+    "https://blog.naver.com/xxxx3"
+  ]
+}
+
+### My blog tone anchors (Top3 improvements)
+GET http://localhost:8000/references/myblog
+
+### Outline (only user-selected refs are sent)
+POST http://localhost:8000/outline/plan
+Content-Type: application/json
+
+{
+  "draft": "환절기 아토피 환자 교육 글을 쓰려 합니다...",
+  "keyword": "환절기 아토피",
+  "volume": { "month": "2025-08", "total": 12000 },
+  "selected_refs": [
+    { "title":"외부 글 예시","url":"https://blog.naver.com/xxxx1","summary":"요약 예시" }
+  ]
+}
+
+### Compose with research (single call: collect evidence + write)
+POST http://localhost:8000/compose_with_research
+Content-Type: application/json
+
+{
+  "draft": "환절기 아토피 환자 교육 글 초안...",
+  "keyword": "환절기 아토피",
+  "volume": { "month": "2025-08", "total": 12000 },
+  "outline": [ { "section_id":"H2-원인", "title":"환절기 악화 요인" } ],
+  "style_profile": { "polite": true, "avg_sentence_len": 18 }
+}

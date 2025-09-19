@@ -1,0 +1,324 @@
+openapi: 3.0.3
+info:
+  title: Blog Assistant MVP API
+  version: 0.2.0
+  description: |
+    PRD v1.2.3 기반. 키워드 추출→검색량→커브 예측→레퍼런스 카드→아웃라인→리서치+작성.
+servers:
+  - url: http://localhost:8000
+security:
+  - ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+    Candidate:
+      type: object
+      required: [keyword, fit]
+      properties:
+        keyword: { type: string, example: "환절기 아토피" }
+        fit: { type: number, minimum: 0, maximum: 1, example: 0.92 }
+        why: { type: string, example: "초안의 보습·실내습도 주제와 직접 연관" }
+    Volume:
+      type: object
+      properties:
+        month: { type: string, example: "2025-08" }
+        total: { type: integer, example: 12000, description: "네이버 지난 달 월간 검색수(PC+모바일 합)" }
+    PredictMap:
+      type: object
+      additionalProperties:
+        oneOf:
+          - type: integer
+            example: 9
+          - type: string
+            example: "1000+"
+    RefCardExternal:
+      type: object
+      properties:
+        title: { type: string }
+        url: { type: string, format: uri }
+        postdate: { type: string, example: "2025-08-17" }
+        summary: { type: string }
+        why: { type: string }
+        flags:
+          type: array
+          items: { type: string }
+    RefCardMyBlog:
+      type: object
+      properties:
+        post_id: { type: string }
+        url: { type: string, format: uri }
+        title: { type: string }
+        summary: { type: string }
+        postdate: { type: string }
+    OutlineItem:
+      type: object
+      properties:
+        section_id: { type: string, example: "H2-원인" }
+        title: { type: string }
+        bullets:
+          type: array
+          items: { type: string }
+    EvidenceRequest:
+      type: object
+      properties:
+        section_id: { type: string }
+        need: { type: string }
+        queries:
+          type: array
+          items: { type: string }
+        prefer:
+          type: array
+          items: { type: string, enum: ["Guideline","PMC","Review","RCT"] }
+    ImageSuggestion:
+      type: object
+      properties:
+        section: { type: string }
+        prompt: { type: string }
+        ratio: { type: string, enum: ["16:9","4:3"] }
+        style: { type: string, enum: ["flat illustration","clean infographic","clinic environment photo-like"] }
+        alt: { type: string }
+paths:
+  /keywords/extract:
+    post:
+      summary: Extract candidate keywords and fit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [draft]
+              properties:
+                draft: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  candidates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Candidate'
+        default:
+          description: error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /keywords/volume:
+    post:
+      summary: Lookup Naver last-month search volume (PC+Mobile)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keywords]
+              properties:
+                keywords:
+                  type: array
+                  items: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  volumes:
+                    type: object
+                    additionalProperties:
+                      $ref: '#/components/schemas/Volume'
+        default:
+          description: error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /curve:
+    get:
+      summary: Refresh curve and predict ranks for given keywords
+      parameters:
+        - in: query
+          name: refresh
+          schema: { type: boolean }
+          description: If true, re-measure ranks and retrain lightweight model
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated_at: { type: string, example: "2025-09-19T12:00:00Z" }
+                  model_summary: { type: object }
+                  predict:
+                    $ref: '#/components/schemas/PredictMap'
+        default:
+          description: error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /references/external:
+    post:
+      summary: Evaluate top 10 external URLs (search OFF) and return recommended cards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyword, urls]
+              properties:
+                keyword: { type: string }
+                urls:
+                  type: array
+                  items: { type: string, format: uri }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cards:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RefCardExternal'
+        default:
+          description: error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /references/myblog:
+    get:
+      summary: Suggest top 3 of my blog posts for tone anchoring
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cards:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RefCardMyBlog'
+        default:
+          description: error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /outline/plan:
+    post:
+      summary: Create outline and evidence requests using only user-selected references
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [draft, keyword, volume]
+              properties:
+                draft: { type: string }
+                keyword: { type: string }
+                volume: { $ref: '#/components/schemas/Volume' }
+                selected_refs:
+                  type: array
+                  description: Summaries of references the user actually selected (my/external)
+                  items:
+                    type: object
+                    properties:
+                      title: { type: string }
+                      url: { type: string, format: uri }
+                      summary: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  outline:
+                    type: array
+                    items: { $ref: '#/components/schemas/OutlineItem' }
+                  evidence_requests:
+                    type: array
+                    items: { $ref: '#/components/schemas/EvidenceRequest' }
+        default:
+          description: error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /compose_with_research:
+    post:
+      summary: Collect evidence (search ON) then compose final article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [draft, keyword, volume, outline]
+              properties:
+                draft: { type: string }
+                keyword: { type: string }
+                volume: { $ref: '#/components/schemas/Volume' }
+                outline:
+                  type: array
+                  items: { $ref: '#/components/schemas/OutlineItem' }
+                style_profile:
+                  type: object
+                  description: Optional tone/style controls from user's blog
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  titles:
+                    type: array
+                    items: { type: string }
+                  overview: { type: string }
+                  body: { type: string }
+                  checklist:
+                    type: array
+                    items: { type: string }
+                  faq:
+                    type: array
+                    items: { type: string }
+                  image_suggestions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ImageSuggestion'
+                  references:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title: { type: string }
+                        url: { type: string, format: uri }
+                        pmid: { type: string }
+        default:
+          description: error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
