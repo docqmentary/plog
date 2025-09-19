@@ -4,9 +4,10 @@
 PRD.md에 정의된 플로우: 초안 → 키워드(1개) → 레퍼런스 선택 → 아웃라인 → 논문 자동 발췌 & 본문 생성(내 톤 + 이미지 제안).
 
 ## 빠른 시작
-1) `.env`를 `.env.sample` 기준으로 채워 넣기
-2) 서버 실행: `make dev` 또는 `npm run dev` (프레임워크 자유)
-3) `/api/examples.http`의 요청을 순서대로 호출해 데모 확인
+1) `.env.sample`을 참고해 필요한 키를 `.env`에 작성하기(없으면 스텁으로 동작)
+2) 의존성 설치: `pip install -e .[dev]`
+3) 개발 서버 실행: `uvicorn app.main:app --reload`
+4) `/api/examples.http`의 요청을 순서대로 호출해 데모 확인
 
 ## 환경변수
 - `OPENAI_API_KEY` — Deep Research/Responses API
