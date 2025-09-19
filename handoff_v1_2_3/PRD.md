@@ -1,93 +1,106 @@
-# PRD (v1.2.3) — 내 병원 블로그 글 생성 어시스턴트
+# PRD (vNext) — 블로그 운영 어시스턴트 MVP
 
-## 1) 목표
-초안 → 메인 키워드 1개 선택(검색량+내 실력 반영) → 내/외부 블로그 레퍼런스 선택 → 아웃라인 → 논문 자동 발췌 & 본문 생성(내 톤 + 이미지 제안 프롬프트)
+## 1. 목표
+의료인을 위한 다중 블로그 운영 도구를 제공한다. 핵심은 **소유권을 증명한 블로그에 협업자를 초대하고, GPT 분석으로 빠르게 포스팅을 작성**할 수 있도록 하는 것이다.
 
-## 2) KPI
-- 작성 리드타임: 초안 → 본문 초안(이미지 제안 포함) 30분 이내
-- 예상 순위(숫자) 적중도: 다음 커브 업데이트 시점의 실제 순위와 ±5등 이내 비율
+## 2. KPI
+- 최초 가입~블로그 소유권 인증 완료까지 평균 1일 이내.
+- 협업 초대 수락률 60% 이상.
+- 지난 12개월 포스팅 분석 완료 소요 시간 30분 이내(블로그 1개 기준).
 
-## 3) 사용자 플로우
-1. 초안 입력 → GPT: 후보 키워드 + fit(0..1) (최대 12개)
-2. 검색량 조회 → 표기값: “네이버 지난 달 월간 검색수(PC+모바일 합)”
-3. 내 파워 커브 업데이트(백그라운드) → 각 후보의 예상 순위(정수/1000+) 계산
-4. 메인 키워드 1개 선택
-5. 레퍼런스(블로그) 추천 & 선택
-   - 외부 레퍼런스(옵션): 키워드로 수집한 상위 10개 URL을 읽기만(검색 OFF) 평가 → 카드 제안, 사용자는 0~3개 선택
-   - 내 블로그 3개(옵션): “발행 당시 예상 순위 vs 현재 순위” 개선도 Top3 제안(톤 참고 전용) → 사용자는 0~3개 선택
-6. 아웃라인 작성
-   - 입력: 초안, 메인 키워드(+지난 달 검색수), **사용자가 실제 선택한 레퍼런스들만**(내/외부 혼합 가능)
-   - 출력: H2~H3 아웃라인 + 섹션별 필요 근거 리스트(evidence_requests)
-7. 논문 자동 발췌 & 본문 생성(한 번에)
-   - 근거: 논문/가이드라인만 사용(블로그 인용 없음)
-   - 출력: 제목 3안, 개요, 본문(H2 4–6), 체크리스트, FAQ, 이미지 제안(생성 모델용 프롬프트 포함), 참고 링크
+## 3. 핵심 사용자 플로우
+1. **회원 가입 / 로그인**
+   - 이메일+비밀번호 가입, 쿠키 기반 세션 유지.
+   - 로그인 성공 시 대시보드로 이동.
+2. **대시보드**
+   - 인증된 블로그 목록, 초대 현황, 최근 포스팅 요약을 카드 형태로 보여준다.
+   - 미완료 온보딩(소유권 인증, 12개월 분석) CTA를 강조한다.
+3. **블로그 추가 & 소유권 인증**
+   - 블로그 URL 입력 → 서버가 랜덤 문자열 두 개(title_code, body_code) 발급.
+   - 사용자는 제목=title_code, 본문=body_code인 게시글을 발행한 뒤 "소유권 인증" 버튼을 클릭.
+   - 서버는 사용자가 입력한 게시글 URL을 **직접 HTTP GET** 후 문자열 포함 여부 확인.
+   - 성공 시 블로그가 사용자 계정에 소유자로 등록. 실패 시 에러 안내(재시도 가능). RSS Fallback 없음.
+4. **온보딩 분석(소유자 전용)**
+   - 소유권 인증 직후 지난 12개월 포스팅 URL을 수집하여 OpenAI Deep Think 모드로 메인 키워드를 추출.
+   - 추출 결과는 포스팅 메타데이터로 저장되며 대시보드/작성 플로우에서 활용.
+5. **협업자 관리**
+   - 소유자는 이메일로 협업자 초대를 생성, 전송, 재전송, **취소**할 수 있다.
+   - 초대 수신자는 링크를 통해 가입/로그인 후 수락.
+   - 소유자는 언제든 협업자를 제거(disown)할 수 있다.
+6. **포스팅 작성**
+   - "새 글 작성" 클릭 시 사용자가 소유/협업 권한이 있는 블로그 중 하나를 선택(1개만 있으면 자동 선택).
+   - 초안 입력 → GPT 기반 키워드/아웃라인/본문 생성 흐름(추후 상세화)으로 이어진다.
 
-## 4) 상세 기능
+## 4. 기능 명세
+### 4.1 인증/보안
+- 이메일 가입: 비밀번호 최소 10자, 대문자/소문자/숫자 중 2종 이상 포함.
+- 비밀번호는 Argon2id 해시 + 고유 salt 저장.
+- 세션: HTTP-only, Secure 쿠키에 서명된 세션 토큰 저장(만료 14일, 활동 시 연장).
+- 로그인 실패 5회 시 15분 잠금. 비밀번호 재설정 링크(이메일 기반) 제공.
+- 이메일 인증은 MVP 범위 밖(필요 시 차기 버전 고려).
 
-### 4.1 키워드 후보 & 표시
-- GPT 출력: [{keyword, fit, why}]
-- 검색량: 네이버 지난 달 월간 검색수(PC+모바일 합)
-- 예상 순위: 정수(예: 7, 14, 52) 또는 1000+(Top1000 밖)
-- 테이블 컬럼: 키워드 | 네이버 지난 달 월간 검색수 | fit | 예상 순위
+### 4.2 사용자/권한 모델
+- **Owner**: 블로그 추가/삭제, 소유권 재검증, 협업자 초대·취소, 협업자 제거.
+- **Collaborator**: 포스팅 작성/수정, 데이터 열람(블로그 소유자가 허용한 범위).
+- 사용자는 여러 블로그에서 다양한 역할을 가질 수 있다.
 
-### 4.2 내 파워 커브 & 숫자 예측(백그라운드)
-- 초기 온보딩: 최근 12개월 포스트 전부 URL을 읽어 메인 키워드 자동 추출 → {post_id, url, main_keyword, published_at} 저장
-- 업데이트(화면 진입 시):
-  - 각 포스트 main_keyword로 네이버 블로그 검색 API 조회 → Top1000 내 정확 순위 R 찾기(없으면 R=1001 저장)
-  - 각 키워드의 지난 달 검색수 V 저장
-  - 경량 예측 모델로 V → R 매핑 학습(부록 참조) → 후보 키워드의 예상 순위(정수/1000+) 계산
-- 1000+ 처리: 데이터 저장은 R=1001(상한값), 학습 시 상한 검열/가중치↓로 반영, 예측이 1000 초과면 UI엔 “1000+”
+### 4.3 블로그 소유권 인증
+- 랜덤 문자열은 16자 base62.
+- 사용자가 제출한 포스트 URL을 서버가 3회까지 재시도하며 HTTP GET.
+- HTML 파싱 후 `<title>`과 `<body>` 텍스트에서 각각 문자열 검증.
+- HTTPS 강제, 리다이렉트 허용(최대 3회).
+- 인증 성공 시 타임스탬프와 검증 스냅샷(응답 헤더+본문 일부) 감사 로그에 저장.
 
-### 4.3 레퍼런스(블로그) 추천 & 선택
-- 외부(옵션):
-  - 키워드로 네이버 블로그 검색 → 정확도순 상위 URL 10개(중복 도메인 제거)
-  - Deep Research 검색 OFF(읽기만)로 평가: 광고성↓·진정성↑·반응↑·최근성·구조 품질(H2/H3)·키워드 적합성
-  - 카드: {title, url, postdate, summary(≤300자), why, flags[]}
-  - 사용자는 0~3개 선택
-- 내 블로그(옵션):
-  - expected_rank_at_publish(5|15|null) vs 최근 측정 R_now → 개선도 큰 순 Top3 제안(톤 참고 전용)
-  - 사용자는 0~3개 선택
-- 중요: 작성 시 블로그 인용 없음(톤/구조 참고만)
+### 4.4 협업자 초대
+- 발신자: `no-reply@placeholder.local` (MVP용). 추후 사용자 소유 도메인으로 변경 가능.
+- 초대 토큰은 72시간 유효, 만료 전 취소 시 즉시 무효화.
+- 초대 수락 시 해당 사용자가 자동으로 Collaborator 권한 부여.
 
-### 4.4 아웃라인 작성
-- 입력: 초안, 메인 키워드(+지난 달 검색수), **사용자가 선택한 레퍼런스들만**(내/외부 혼합 가능)
-- 출력:
-  - outline[] (H2~H3, section_id 포함)
-  - evidence_requests[] (섹션별 필요 근거: 어떤 권고/리뷰/RCT, 검색문구 후보, 우선 출처 타입)
+### 4.5 온보딩 Deep Think 분석
+- 소유자가 인증 완료한 각 블로그에 대해 최근 12개월 포스트 URL을 입력 받거나 RSS/사이트맵에서 자동 수집.
+- 수집된 URL은 OpenAI Deep Think 모드에 전달하여 메인 키워드를 추출.
+- 예산 제한 없음. 실패 시 재시도 큐에 넣고 사용자에게 상태 표시.
 
-### 4.5 논문 자동 발췌 & 본문 생성(한 번에)
-- Deep Research 검색 허용(PubMed/PMC/학회·가이드라인 우선)
-- 내부 2스텝(단일 호출):
-  1) evidence_requests[]를 충족하는 증거 번들 생성
-     - {title, url/doi, pmid, pin, summary(2–3문장), (필요시) 짧은 인용, year, org}
-  2) 내 톤 반영해 본문 작성(H2 4–6, 체크리스트, FAQ, 이미지 제안 포함)
+### 4.6 외부 API 연동
+- **네이버 검색광고 API**: 이미 발급된 키로 검색량 조회.
+- **네이버 검색 API**: 서비스 URL 준비 후 발급 예정. 로컬/스테이징에선 목업 또는 대체 SERP 제공자 사용.
+- 개발 단계에서는 실제 키를 환경 변수로 주입하고, 배포 후 프로덕션 모드 전환.
+- OpenAI Responses/Deep Think API 사용. 호출 한도 미지정.
 
-#### 이미지 제안 — 생성 모델용 프롬프트 규격
-- 각 섹션 1~2개:
-  - section, prompt(생성 모델에 그대로 줄 문구), ratio(16:9|4:3), style(flat illustration|clean infographic|clinic environment photo-like), alt
-- 프롬프트 예시:
-  [교육용 일러스트]
-  주제: 환절기 아토피 보습 루틴 5단계.
-  구성: 손 씻기→미지근한 물 샤워→타월 톡톡 건조→3분 내 보습제→면소재 의류.
-  표현: 깨끗한 라인, 단계 번호, 아이콘 위주(텍스트 최소).
-  톤: 의료 과장 금지, 교육 목적.
-  배경: 밝은 클리닉 톤, 브랜드/로고 없음.
-  출력 비율: 4:3.
+## 5. 데이터/저장
+- `users`: email, password_hash, role flags, last_login, lock info.
+- `sessions`: session_id, user_id, expires_at, metadata.
+- `blogs`: id, owner_id, url, title, verified_at, verification_snapshot.
+- `blog_collaborators`: blog_id, user_id, role, invited_by, invited_at, accepted_at, revoked_at.
+- `blog_invites`: email, blog_id, token, expires_at, status.
+- `posts`: blog_id, url, main_keyword, published_at, analysis_status.
+- `analysis_jobs`: blog_id, status, started_at, completed_at, retry_count.
+- 감사 로그 테이블(인증 시도, 초대 취소 등) 별도 운영.
 
-## 5) 데이터/저장
-- Post: id, url, main_keyword(초기 추출), published_at, expected_rank_at_publish(5|15|null)
-- RankHistory: post_id, keyword, rank(R ∈ [1..1001]), measured_at, mode(sim)
-- CurveModel: params/bins, updated_at
-- KeywordVolume: keyword, month(YYYY-MM), volume_total
-- RefCardExternal: {url, title, postdate, summary, why, flags}
-- RefCardMyBlog: {post_id, url, title, summary, postdate}
-※ 외부 블로그/논문 전문 텍스트 저장 금지(런타임 열람·요약만).
+## 6. API 개요
+- `POST /auth/signup` — 이메일, 비밀번호로 가입.
+- `POST /auth/login` — 로그인 후 세션 쿠키 발급.
+- `POST /auth/logout` — 세션 무효화.
+- `POST /blogs` — 블로그 추가 및 검증 코드 발급.
+- `POST /blogs/{id}/verify` — 게시글 URL 제출 후 검증.
+- `POST /blogs/{id}/analysis` — 12개월 포스트 분석 시작.
+- `POST /blogs/{id}/invites` — 협업자 초대 생성/전송.
+- `POST /blogs/{id}/invites/{inviteId}/cancel` — 초대 취소.
+- `POST /blogs/{id}/collaborators/{userId}/remove` — 협업자 제거.
+- `POST /posts` — 새 포스팅 워크플로우 시작.
 
-## 6) API/엔드포인트(요약)
-POST /keywords/extract         → { candidates:[{keyword,fit,why}] }
-POST /keywords/volume          → { volumes:{키워드:{month:"YYYY-MM", total:Number}} }
-GET  /curve?refresh=true       → { updated_at, model_summary, predict:{키워드: 순위숫자 | "1000+"} }
-POST /references/external      → { cards:[...TopN] }      # DR 검색 OFF, 10개 URL 평가
-GET  /references/myblog        → { cards:[...3개] }       # 톤 참고 전용
-POST /outline/plan             → { outline:[...], evidence_requests:[...] }
-POST /compose_with_research    → { titles[], overview, body, checklist, faq, image_suggestions[], references[] }
+## 7. 프런트엔드 기본 원칙
+- 미니멀한 디자인 시스템(라이트/다크 필요 없음).
+- 레이아웃 우선순위: ① 대시보드 ② 블로그 추가/소유권 인증 ③ 포스팅 작성 플로우 ④ 협업자 관리.
+- 반응형(데스크톱 우선, 모바일 뷰는 1열 스택).
+- 와이어프레임/`docs/ui` 자산은 사용하지 않음(삭제 예정).
+
+## 8. 배포/환경
+- 개발: Docker Compose 또는 로컬 실행.
+- 스테이징/프로덕션: 서비스 URL 확보 가능한 호스팅(Firebase Hosting, Supabase, Render 등)으로 배포 후 네이버 검색 API 키 신청.
+- 환경 변수: `OPENAI_API_KEY`, `NAVER_SEARCHAD_ACCESS_KEY`, `NAVER_SEARCHAD_SECRET_KEY`, `NAVER_SEARCH_API_KEY`(프로덕션 발급 후 적용).
+
+## 9. 오픈 이슈 / TBD
+- 이메일 발송 인프라(SMTP vs. 외부 서비스) 확정 필요.
+- 비밀번호 재설정 메일 템플릿 및 발신자 브랜드링.
+- 협업자 권한 세분화(읽기 전용 등) 여부.
