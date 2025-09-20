@@ -4,3 +4,6 @@ __pycache__/
 plog.db
 *.sqlite3
 *.egg-info/
+frontend/node_modules/
+frontend/dist/
+frontend/.env*

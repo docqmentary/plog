@@ -23,6 +23,31 @@ class BlogService:
     def __init__(self) -> None:
         self.settings = get_settings()
 
+    def list_blogs(self, user_id: int) -> List[BlogPayload]:
+        with session_scope() as session:
+            blogs = session.exec(
+                select(Blog)
+                .where(Blog.owner_user_id == user_id)
+                .order_by(Blog.created_at.desc())
+            ).all()
+            payloads: List[BlogPayload] = []
+            for blog in blogs:
+                verification = session.exec(
+                    select(BlogVerification).where(BlogVerification.blog_id == blog.id)
+                ).first()
+                payloads.append(
+                    BlogPayload(
+                        id=blog.id,
+                        naver_blog_id=blog.naver_blog_id,
+                        title=blog.title,
+                        status=blog.status,
+                        verified_at=blog.verified_at,
+                        title_token=verification.title_token if verification else "",
+                        body_token=verification.body_token if verification else "",
+                    )
+                )
+            return payloads
+
     def create_blog(self, owner_user_id: int, naver_blog_id: str, title: str | None = None) -> BlogPayload:
         with session_scope() as session:
             blog = Blog(owner_user_id=owner_user_id, naver_blog_id=naver_blog_id, title=title)
@@ -163,3 +188,4 @@ class BlogService:
 
 
 __all__ = ["BlogService"]
+

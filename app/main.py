@@ -82,6 +82,12 @@ def google_callback(payload: GoogleCallbackRequest) -> SessionPayload:
     return SessionPayload(**session_payload)
 
 
+@app.get("/blogs", response_model=list[BlogPayload])
+def list_blogs(current_user: User = Depends(get_current_user)) -> list[BlogPayload]:
+    service = BlogService()
+    return service.list_blogs(current_user.id)
+
+
 @app.post("/blogs", response_model=BlogPayload)
 def create_blog(payload: BlogCreateRequest, current_user: User = Depends(get_current_user)) -> BlogPayload:
     service = BlogService()
