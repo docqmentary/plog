@@ -11,8 +11,8 @@ PRD.md에 정의된 플로우: 초안 → 키워드(1개) → 레퍼런스 선�
 
 ## 환경변수
 - `OPENAI_API_KEY` — Deep Research/Responses API
-- `NAVER_SEARCHAD_ACCESS_KEY`, `NAVER_SEARCHAD_SECRET_KEY` — 네이버 검색광고(검색량)
-- `NAVER_SEARCH_API_KEY` — 네이버 블로그 검색 API (또는 대체 SERP 공급자)
+- `NAVER_SEARCHAD_ACCESS_KEY`, `NAVER_SEARCHAD_SECRET_KEY` — 네이버 검색광고(검색량) API
+- `NAVER_SEARCH_CLIENT_ID`, `NAVER_SEARCH_CLIENT_SECRET` — 네이버 검색 API
 
 ## 문서
 - 기능 요구: `PRD.md`

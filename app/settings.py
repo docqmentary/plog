@@ -15,9 +15,19 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("openai_api_key", "OPENAI_API_KEY"),
     )
-    naver_search_api_key: str | None = Field(
+    naver_search_client_id: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("naver_search_api_key", "NAVER_SEARCH_API_KEY"),
+        validation_alias=AliasChoices(
+            "naver_search_client_id",
+            "NAVER_SEARCH_CLIENT_ID",
+        ),
+    )
+    naver_search_client_secret: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "naver_search_client_secret",
+            "NAVER_SEARCH_CLIENT_SECRET",
+        ),
     )
     naver_searchad_access_key: str | None = Field(
         default=None,

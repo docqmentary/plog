@@ -3,7 +3,7 @@
 ## Prerequisites
 - Render account (https://render.com) with billing info if you plan to move beyond the free tier.
 - Project repository pushed to GitHub, GitLab, or Bitbucket.
-- Environment secrets ready: `OPENAI_API_KEY`, `NAVER_SEARCH_API_KEY`, `NAVER_SEARCHAD_ACCESS_KEY`, `NAVER_SEARCHAD_SECRET_KEY`.
+- Environment secrets ready: `OPENAI_API_KEY`, `NAVER_SEARCH_CLIENT_ID`, `NAVER_SEARCH_CLIENT_SECRET`, `NAVER_SEARCHAD_ACCESS_KEY`, `NAVER_SEARCHAD_SECRET_KEY`.
 
 ## One-time setup
 1. Commit the new deployment files (`Dockerfile`, `.dockerignore`, `render.yaml`) and push the repository to your remote.
@@ -13,7 +13,8 @@
 5. In the Render dashboard, open the service and use the **Environment** tab to add the required variables:
    - `ENVIRONMENT=production`
    - `OPENAI_API_KEY` (copy from your secrets manager)
-   - `NAVER_SEARCH_API_KEY`
+   - `NAVER_SEARCH_CLIENT_ID`
+   - `NAVER_SEARCH_CLIENT_SECRET`
    - `NAVER_SEARCHAD_ACCESS_KEY`
    - `NAVER_SEARCHAD_SECRET_KEY`
    - `DEV_ALLOW_HTTP_FETCH=false`

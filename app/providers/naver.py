@@ -15,7 +15,10 @@ class NaverSearchProvider:
 
     @property
     def is_stub(self) -> bool:
-        return not bool(self.settings.naver_search_api_key)
+        return not bool(
+            self.settings.naver_search_client_id
+            and self.settings.naver_search_client_secret
+        )
 
     def monthly_search_volume(self, keyword: str) -> dict:
         seed = int(hashlib.sha1(keyword.encode("utf-8")).hexdigest(), 16)
