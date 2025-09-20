@@ -20,14 +20,11 @@ services:
         sync: false
       - key: DEV_ALLOW_HTTP_FETCH
         value: "false"
-  - type: web
+  - type: static_site
     name: plog-frontend
-    env: static
-    plan: free
-    region: singapore
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    publishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
         value: https://plog-m16y.onrender.com
