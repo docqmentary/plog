@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: plog-api
+    env: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NAVER_SEARCH_API_KEY
+        sync: false
+      - key: NAVER_SEARCHAD_ACCESS_KEY
+        sync: false
+      - key: NAVER_SEARCHAD_SECRET_KEY
+        sync: false
+      - key: DEV_ALLOW_HTTP_FETCH
+        value: "false"
