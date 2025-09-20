@@ -16,13 +16,18 @@ def init_db() -> None:
 
 
 def get_session() -> Iterator[Session]:
-    with Session(_engine) as session:
+    # Prevent attribute expiration on commit so returned ORM instances
+    # can be safely accessed outside the session scope (e.g., during
+    # response assembly). This avoids DetachedInstanceError.
+    with Session(_engine, expire_on_commit=False) as session:
         yield session
 
 
 @contextmanager
 def session_scope() -> Iterator[Session]:
-    session = Session(_engine)
+    # Keep attributes available after commit to avoid triggering lazy
+    # refresh on detached instances (which would require an active session).
+    session = Session(_engine, expire_on_commit=False)
     try:
         yield session
         session.commit()
