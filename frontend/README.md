@@ -38,6 +38,6 @@ The static assets are emitted to `dist/`.
 - **Root directory:** `frontend`
 - **Build command:** `npm install && npm run build`
 - **Publish directory:** `dist`
-- **Environment variables:** set `VITE_API_BASE_URL` to your FastAPI URL (for example `https://plog-m16y.onrender.com`).
+- **Environment variables:** set `VITE_API_BASE_URL` to your FastAPI URL (for example `https://plog-api.onrender.com`).
 
 Because CORS is already open on the backend, the static frontend can call the APIs directly once `VITE_API_BASE_URL` is configured.

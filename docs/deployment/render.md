@@ -37,5 +37,5 @@
 ## Frontend static site
 - The `render.yaml` now includes a `plog-frontend` static service (root directory `frontend`).
 - Render will run `npm install && npm run build` and publish the `frontend/dist` folder automatically.
-- Set `VITE_API_BASE_URL` (defaults to the backend Render URL `https://plog-m16y.onrender.com`). Update this env var if the backend hostname changes.
+- Set `VITE_API_BASE_URL` (defaults to the backend Render URL `https://plog-api.onrender.com`). Update this env var if the backend hostname changes.
 - After pushing changes, both the backend and frontend redeploy automatically (or via **Manual Deploy** in the dashboard).
